@@ -3,6 +3,10 @@
 Vous utiliserez ce dépôt comme point de départ pour votre projet de
 compilation.
 
+# Noms du binôme
+
+- El Ammari Nordine
+- Arthur Assima
 
 ##  Instructions pour rendre votre travail avec gitlab
 
@@ -21,3 +25,11 @@ Pour permettre à votre chargé de TD de suivre votre travail sur ce projet :
 compte-rendu du travail effectué : quelle partie du langage vous avez
 couverte, quels choix vous avez faits, quel est l’état d’avancement de
 vos différents outils, etc.
+
+# Pretty-printer 
+
+- lancer la commande suivante :
+
+```code
+python3 evaluator.py filename.json
+```
