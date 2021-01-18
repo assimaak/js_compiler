@@ -9,20 +9,31 @@ class Evaluator:
 
     def evaluateData(self):
         list_string = []
-        for x in self.data:
-            if x["type"]=="ExpressionStatement":
-                toAdd = str(self.evaluateExpression(x["expression"]))
-                #possible to avoid that if statement 
-                #if toAdd[0] == "(":
-                #    toAdd = toAdd[1:-1]
-                list_string.append((toAdd)+";")
-            elif x["type"]=="VariableDeclaration":
-                toAdd=str(self.evaluateVariable(x["declarations"],0))
-                list_string.append(x["kind"]+" "+(toAdd)+";")
-            elif x["type"]=="WhileStatement":
-                block = Evaluator(x["body"]["body"])
-                toAdd="while "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(block.evaluateData()))+" \n}")
-                list_string.append(toAdd)
+        if not(self.data is None):
+            for x in self.data:
+                if x["type"]=="ExpressionStatement":
+                    toAdd = str(self.evaluateExpression(x["expression"]))
+                    #possible to avoid that if statement 
+                    #if toAdd[0] == "(":
+                    #    toAdd = toAdd[1:-1]
+                    list_string.append((toAdd)+";")
+                elif x["type"]=="VariableDeclaration":
+                    toAdd=str(self.evaluateVariable(x["declarations"],0))
+                    list_string.append(x["kind"]+" "+(toAdd)+";")
+                elif x["type"]=="WhileStatement" :
+                    block = Evaluator(x["body"]["body"])
+                    toAdd="while "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(block.evaluateData()))+" \n}")
+                    list_string.append(toAdd)
+                elif x["type"]=="IfStatement" :
+                    ifBlock = Evaluator(x["consequent"]["body"])
+                    elseEvaluation = []
+                    if not (x["alternate"] is None):
+                        elseBlock = Evaluator(x["alternate"]["body"])
+                        elseEvaluation = elseBlock.evaluateData()
+                    toAdd="if "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(ifBlock.evaluateData()))+" \n}")
+                    if elseEvaluation != []:
+                        toAdd = toAdd+"\nelse { \n\t"+"\n\t".join(elseEvaluation)+"\n}"              
+                    list_string.append(toAdd)
         return list_string
         
     
@@ -41,6 +52,8 @@ class Evaluator:
             result = expr["callee"]["name"]+"("+str_args+")"
         elif expr["type"] == "UpdateExpression":
             result = str(expr["argument"]["name"])+str(expr["operator"])
+        elif expr["type"] == "AssignmentExpression":
+            result = str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"]))
         elif expr["type"] == "BinaryExpression":
             result = "("+str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"]))+")"
         return result
@@ -70,4 +83,3 @@ def main(filename):
     
 if __name__ == "__main__":
     main(sys.argv[1])
-
