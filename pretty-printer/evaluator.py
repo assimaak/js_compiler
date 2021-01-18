@@ -56,6 +56,14 @@ class Evaluator:
                     list_string.append(toAdd)
                 elif x["type"]=="ReturnStatement":
                     list_string.append("return "+self.evaluateExpression(x["argument"])+";")
+                elif x["type"]=="SwitchStatement":
+                    switchBlock = Evaluator(x["cases"]).evaluateData()
+                    list_string.append("switch("+self.evaluateExpression(x["discriminant"])+") {\n\t"+"\n\t".join(switchBlock)+"\n}")
+                elif x["type"]=="SwitchCase":
+                    if not( x["test"] is None):
+                        list_string.append("\tcase "+self.evaluateExpression(x["test"])+":\n\t\t"+"\n\t\t".join(Evaluator(x["consequent"]).evaluateData())+"\n}")
+                    else:
+                        list_string.append("\tdefault:\n\t\t"+"\n\t\t".join(Evaluator(x["consequent"]).evaluateData())+"\n}")
         return list_string
         
     
@@ -78,6 +86,13 @@ class Evaluator:
             result = str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"]))
         elif expr["type"] == "BinaryExpression":
             result = "("+str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"]))+")"
+        elif expr["type"] == "UnaryExpression":
+            operator = ""
+            if not(expr["operator"] is None):
+                operator = expr["operator"]
+            result = "("+operator+self.evaluateExpression(expr["argument"])+")"
+        elif expr["type"] == "MemberExpression":
+            result = self.evaluateExpression(expr["object"])+"."+self.evaluateExpression(expr["property"])
         return result
 
     def evaluateVariable(self, expr, indexVariable):
@@ -85,7 +100,9 @@ class Evaluator:
             if ((expr[indexVariable]["init"]) is None):
                 return expr[indexVariable]["id"]["name"]+", "+self.evaluateVariable(expr, indexVariable+1)
             elif (expr[indexVariable]["init"]["type"]=="NullLiteral"):
-                return expr[indexVariable]["id"]["name"]+" = null"+", "+self.evaluateVariable(expr, indexVariable+1)    
+                return expr[indexVariable]["id"]["name"]+" = null"+", "+self.evaluateVariable(expr, indexVariable+1)
+            elif ((expr[indexVariable]["init"]["type"])=="MemberExpression"):
+                return expr[indexVariable]["id"]["name"]+" = "+self.evaluateExpression(expr[indexVariable]["init"])+", "+self.evaluateVariable(expr, indexVariable+1)
             else:    
                 return expr[indexVariable]["id"]["name"]+" = "+expr[indexVariable]["init"]["extra"]["raw"]+", "+self.evaluateVariable(expr, indexVariable+1)
         else :
@@ -93,6 +110,8 @@ class Evaluator:
                 return expr[indexVariable]["id"]["name"]
             elif (expr[indexVariable]["init"]["type"]=="NullLiteral"):
                 return expr[indexVariable]["id"]["name"]+" = null"
+            elif ((expr[indexVariable]["init"]["type"])=="MemberExpression"):
+                return expr[indexVariable]["id"]["name"]+" = "+self.evaluateExpression(expr[indexVariable]["init"])
             else:
                 return expr[indexVariable]["id"]["name"]+" = "+expr[indexVariable]["init"]["extra"]["raw"]
 
