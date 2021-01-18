@@ -84,7 +84,7 @@ class Evaluator:
             result = str(expr["argument"]["name"])+str(expr["operator"])
         elif expr["type"] == "AssignmentExpression":
             result = str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"]))
-        elif expr["type"] == "BinaryExpression":
+        elif expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression":
             result = "("+str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"]))+")"
         elif expr["type"] == "UnaryExpression":
             operator = ""
