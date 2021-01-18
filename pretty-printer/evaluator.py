@@ -54,6 +54,8 @@ class Evaluator:
                     str_params = ", ".join(params)
                     toAdd = "function "+x["id"]["name"]+"("+str_params+") {\n\t"+"\n\t".join(funcBlock)+"\n}"
                     list_string.append(toAdd)
+                elif x["type"]=="ReturnStatement":
+                    list_string.append("return "+self.evaluateExpression(x["argument"])+";")
         return list_string
         
     
