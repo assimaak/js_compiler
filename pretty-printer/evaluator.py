@@ -45,6 +45,15 @@ class Evaluator:
                     list_string.append("break;")
                 elif x["type"] == "ContinueStatement":
                     list_string.append("continue;")
+                elif x["type"] == "FunctionDeclaration":
+                    funcBlock = Evaluator(x["body"]["body"]).evaluateData()
+                    params=[]
+                    if not(x["params"] is None):
+                        for y in x["params"]:
+                            params.append(self.evaluateExpression(y))
+                    str_params = ", ".join(params)
+                    toAdd = "function "+x["id"]["name"]+"("+str_params+") {\n\t"+"\n\t".join(funcBlock)+"\n}"
+                    list_string.append(toAdd)
         return list_string
         
     
