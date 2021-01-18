@@ -34,6 +34,13 @@ class Evaluator:
                     if elseEvaluation != []:
                         toAdd = toAdd+"\nelse { \n\t"+"\n\t".join(elseEvaluation)+"\n}"              
                     list_string.append(toAdd)
+                elif x["type"] == "ForStatement":
+                    forBlock = Evaluator(x["body"]["body"]).evaluateData()
+                    init = ""
+                    if not (x["init"] is None):
+                        init = self.evaluateExpression(x["init"])
+                    toAdd = "for ("+init+"; "+self.evaluateExpression(x["test"])+"; "+self.evaluateExpression(x["update"])+") {\n\t"+"\n\t".join(forBlock)+"\n}"
+                    list_string.append(toAdd)
         return list_string
         
     
