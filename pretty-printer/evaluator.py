@@ -41,6 +41,10 @@ class Evaluator:
                         init = self.evaluateExpression(x["init"])
                     toAdd = "for ("+init+"; "+self.evaluateExpression(x["test"])+"; "+self.evaluateExpression(x["update"])+") {\n\t"+"\n\t".join(forBlock)+"\n}"
                     list_string.append(toAdd)
+                elif x["type"] == "BreakStatement":
+                    list_string.append("break;")
+                elif x["type"] == "ContinueStatement":
+                    list_string.append("continue;")
         return list_string
         
     
