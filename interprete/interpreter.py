@@ -9,6 +9,7 @@ class Interpreter:
         self.ops = {"+": (lambda x,y: x+y), "-": (lambda x,y: x-y),
                     "*": (lambda x,y: x*y), "/": (lambda x,y: x/y),
                     "%": (lambda x,y: x%y)}
+        self.var = {}
 
     def evaluateData(self):
         list_string = []
@@ -19,10 +20,10 @@ class Interpreter:
                     #possible to avoid that if statement 
                     #if toAdd[0] == "(":
                     #    toAdd = toAdd[1:-1]
-                    list_string.append((toAdd)+";")
+                    list_string.append((toAdd))
                 elif x["type"]=="VariableDeclaration":
-                    toAdd=str(self.evaluateVariable(x["declarations"],0))
-                    list_string.append(x["kind"]+" "+(toAdd)+";")
+                    toAdd= "VariableDeclaration : "+str(self.evaluateVariable(x["declarations"],0))
+                    list_string.append((toAdd))
                 elif x["type"]=="WhileStatement" :
                     block = Evaluator(x["body"]["body"])
                     toAdd="while "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(block.evaluateData()))+" \n}")
@@ -77,6 +78,28 @@ class Interpreter:
         elif expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression":
             result = self.ops[str(expr["operator"])] (int(self.evaluateExpression(expr["left"])),int(self.evaluateExpression(expr["right"])))
         return result
+
+    def evaluateVariable(self, expr, indexVariable):
+        if indexVariable != (len(expr)-1):
+            if ((expr[indexVariable]["init"]) is None):
+                return expr[indexVariable]["id"]["name"]+", "+self.evaluateVariable(expr, indexVariable+1)
+            elif (expr[indexVariable]["init"]["type"]=="NullLiteral"):
+                return expr[indexVariable]["id"]["name"]+" = null"+", "+self.evaluateVariable(expr, indexVariable+1)
+            elif ((expr[indexVariable]["init"]["type"])=="MemberExpression"):
+                return expr[indexVariable]["id"]["name"]+" = "+self.evaluateExpression(expr[indexVariable]["init"])+", "+self.evaluateVariable(expr, indexVariable+1)
+            else:    
+                return expr[indexVariable]["id"]["name"]+" = "+expr[indexVariable]["init"]["extra"]["raw"]+", "+self.evaluateVariable(expr, indexVariable+1)
+        else :
+            if ((expr[indexVariable]["init"]) is None):
+                return expr[indexVariable]["id"]["name"]
+            elif (expr[indexVariable]["init"]["type"]=="NullLiteral"):
+                return expr[indexVariable]["id"]["name"]+" = null"
+            elif ((expr[indexVariable]["init"]["type"])=="MemberExpression"):
+                return expr[indexVariable]["id"]["name"]+" = "+self.evaluateExpression(expr[indexVariable]["init"])
+            else:
+                return expr[indexVariable]["id"]["name"]+" = "+expr[indexVariable]["init"]["extra"]["raw"]
+
+
 
 def main(filename):
     p = Parser(filename)
