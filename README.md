@@ -28,8 +28,16 @@ vos différents outils, etc.
 
 # Pretty-printer 
 
-- lancer la commande suivante :
+- Lancer la commande suivante :
 
 ```code
 python3 evaluator.py filename.json
+```
+
+# Interprète
+
+- Lancer la commande suivante :
+
+```code
+python3 interpreter.py filename.json
 ```
