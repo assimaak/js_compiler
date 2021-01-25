@@ -22,7 +22,7 @@ class Interpreter:
                     #    toAdd = toAdd[1:-1]
                     list_string.append((toAdd))
                 elif x["type"]=="VariableDeclaration":
-                    toAdd= "VariableDeclaration : "+str(self.evaluateVariable(x["declarations"],0))
+                    toAdd= str(self.evaluateVariable(x["declarations"],0))
                     list_string.append((toAdd))
                 elif x["type"]=="WhileStatement" :
                     block = Evaluator(x["body"]["body"])
@@ -74,30 +74,38 @@ class Interpreter:
     def evaluateExpression(self, expr):
         result = ""
         if expr["type"] == "NumericLiteral":
-            result = str(expr["value"])
+            result = int(expr["value"])
         elif expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression":
             result = self.ops[str(expr["operator"])] (int(self.evaluateExpression(expr["left"])),int(self.evaluateExpression(expr["right"])))
+        elif expr["type"] == "StringLiteral":
+            result = expr["value"]
         return result
 
     def evaluateVariable(self, expr, indexVariable):
         if indexVariable != (len(expr)-1):
             if ((expr[indexVariable]["init"]) is None):
-                return expr[indexVariable]["id"]["name"]+", "+self.evaluateVariable(expr, indexVariable+1)
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+"\n"+self.evaluateVariable(expr, indexVariable+1)
             elif (expr[indexVariable]["init"]["type"]=="NullLiteral"):
-                return expr[indexVariable]["id"]["name"]+" = null"+", "+self.evaluateVariable(expr, indexVariable+1)
+                self.var[(expr[indexVariable]["id"]["name"])]= None
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+" null"+"\n"+self.evaluateVariable(expr, indexVariable+1)
             elif ((expr[indexVariable]["init"]["type"])=="MemberExpression"):
-                return expr[indexVariable]["id"]["name"]+" = "+self.evaluateExpression(expr[indexVariable]["init"])+", "+self.evaluateVariable(expr, indexVariable+1)
-            else:    
-                return expr[indexVariable]["id"]["name"]+" = "+expr[indexVariable]["init"]["extra"]["raw"]+", "+self.evaluateVariable(expr, indexVariable+1)
+                self.var[(expr[indexVariable]["id"]["name"])]="MemberExpression not treated yet"
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+" "+self.evaluateExpression(expr[indexVariable]["init"])+"\n"+self.evaluateVariable(expr, indexVariable+1)
+            else:
+                self.var[(expr[indexVariable]["id"]["name"])]=self.evaluateExpression(expr[indexVariable]["init"])
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+" "+str(self.evaluateExpression(expr[indexVariable]["init"]))+"\n"+self.evaluateVariable(expr, indexVariable+1)
         else :
             if ((expr[indexVariable]["init"]) is None):
-                return expr[indexVariable]["id"]["name"]
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]
             elif (expr[indexVariable]["init"]["type"]=="NullLiteral"):
-                return expr[indexVariable]["id"]["name"]+" = null"
+                self.var[(expr[indexVariable]["id"]["name"])]=None
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+" null"
             elif ((expr[indexVariable]["init"]["type"])=="MemberExpression"):
-                return expr[indexVariable]["id"]["name"]+" = "+self.evaluateExpression(expr[indexVariable]["init"])
+                self.var[(expr[indexVariable]["id"]["name"])]="MemberExpression not treated yet"
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+" "+self.evaluateExpression(expr[indexVariable]["init"])
             else:
-                return expr[indexVariable]["id"]["name"]+" = "+expr[indexVariable]["init"]["extra"]["raw"]
+                self.var[(expr[indexVariable]["id"]["name"])]=self.evaluateExpression(expr[indexVariable]["init"])
+                return "VariableDeclaration: "+expr[indexVariable]["id"]["name"]+" "+str(self.evaluateExpression(expr[indexVariable]["init"]))
 
 
 
