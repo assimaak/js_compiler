@@ -1,4 +1,5 @@
 import sys
+import builtins
 from PythonApplication1 import Parser
 
 class Interpreter:
@@ -8,26 +9,32 @@ class Interpreter:
         self.data = parsedData
         self.ops = {"+": (lambda x,y: x+y), "-": (lambda x,y: x-y),
                     "*": (lambda x,y: x*y), "/": (lambda x,y: x/y),
-                    "%": (lambda x,y: x%y)}
-        self.var = {}
+                    "%": (lambda x,y: x%y), "<": (lambda x,y: x<y),
+                    ">": (lambda x,y: x>y), "==":(lambda x,y: x==y),
+                    "!=":(lambda x,y: x!=y),">=":(lambda x,y: x>=y),
+                    "<=":(lambda x,y: x<=y),"++":(lambda x: x+1),
+                    "--":(lambda x: x-1)}
+        self.var = {"print" : "print"}
+        self.builtins = ["print"]
 
     def evaluateData(self):
         list_string = []
         if not(self.data is None):
             for x in self.data:
                 if x["type"]=="ExpressionStatement":
-                    toAdd = "ExpressionStatement : "+str(self.evaluateExpression(x["expression"]))
+                    self.evaluateExpression(x["expression"])
                     #possible to avoid that if statement 
                     #if toAdd[0] == "(":
                     #    toAdd = toAdd[1:-1]
-                    list_string.append((toAdd))
                 elif x["type"]=="VariableDeclaration":
-                    toAdd= str(self.evaluateVariable(x["declarations"],0))
-                    list_string.append((toAdd))
+                    print(str(self.evaluateVariable(x["declarations"],0)))
                 elif x["type"]=="WhileStatement" :
-                    block = Evaluator(x["body"]["body"])
-                    toAdd="while "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(block.evaluateData()))+" \n}")
-                    list_string.append(toAdd)
+                    block = Interpreter(x["body"]["body"])
+                    block.var = self.var
+                    print("WhileStatement: \n")
+                    while self.evaluateExpression(x["test"]):
+                        block.evaluateData()
+                    print("\nEndWhileStatement\n")
                 elif x["type"]=="IfStatement" :
                     ifBlock = Evaluator(x["consequent"]["body"])
                     elseEvaluation = []
@@ -79,6 +86,20 @@ class Interpreter:
             result = self.ops[str(expr["operator"])] (int(self.evaluateExpression(expr["left"])),int(self.evaluateExpression(expr["right"])))
         elif expr["type"] == "StringLiteral":
             result = expr["value"]
+        elif expr["type"] == "Identifier":
+            result = self.var[(expr["name"])]
+        elif expr["type"]=="UpdateExpression":
+            self.var[(expr["argument"]["name"])] = self.ops[str(expr["operator"])] (int(self.evaluateExpression(expr["argument"])))
+            print("UpdateExpression: "+expr["argument"]["name"]+" "+str(expr["operator"]))
+        elif expr["type"]=="CallExpression":
+            func_name = self.evaluateExpression(expr["callee"])
+            func_arguments= []
+            for x in expr["arguments"]:
+                func_arguments.append(self.evaluateExpression(x))
+            if func_name in self.builtins:
+                my_func = getattr(builtins, func_name)
+                print("CallExpression: "+func_name+" "+" ".join(str(v) for v in func_arguments)+" -> (function_execution below)")
+                my_func(*func_arguments)
         return result
 
     def evaluateVariable(self, expr, indexVariable):
