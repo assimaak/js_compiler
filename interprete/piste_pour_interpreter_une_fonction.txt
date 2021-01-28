@@ -1,0 +1,49 @@
+>>> p = Parser("03-while.json")
+>>> interpreter = Interpreter(p.getData())
+>>> interpreter.var["func"]=(p.getData())
+>>> interpreter.var
+{'print': 'print', 'func': [{'type': 'VariableDeclaration', 'start': 0, 'end': 10, 'loc': {'start': {'line': 1, 'column': 0}, 'end': {'line': 1, 'column': 10}}, 'declarations': [{'type': 'VariableDeclarator', 'start': 4, 'end': 9, 'loc': {'start': {'line': 1, 'column': 4}, 'end': {'line': 1, 'column': 9}}, 'id': {'type': 'Identifier', 'start': 4, 'end': 5, 'loc': {'start': {'line': 1, 'column': 4}, 'end': {'line': 1, 'column': 5}, 'identifierName': 'x'}, 'name': 'x'}, 'init': {'type': 'NumericLiteral', 'start': 8, 'end': 9, 'loc': {'start': {'line': 1, 'column': 8}, 'end': {'line': 1, 'column': 9}}, 'extra': {'rawValue': 0, 'raw': '0'}, 'value': 0}}], 'kind': 'var'}, {'type': 'WhileStatement', 'start': 11, 'end': 54, 'loc': {'start': {'line': 2, 'column': 0}, 'end': {'line': 5, 'column': 1}}, 'test': {'type': 'BinaryExpression', 'start': 18, 'end': 24, 'loc': {'start': {'line': 2, 'column': 7}, 'end': {'line': 2, 'column': 13}}, 'left': {'type': 'Identifier', 'start': 18, 'end': 19, 'loc': {'start': {'line': 2, 'column': 7}, 'end': {'line': 2, 'column': 8}, 'identifierName': 'x'}, 'name': 'x'}, 'operator': '<', 'right': {'type': 'NumericLiteral', 'start': 22, 'end': 24, 'loc': {'start': {'line': 2, 'column': 11}, 'end': {'line': 2, 'column': 13}}, 'extra': {'rawValue': 10, 'raw': '10'}, 'value': 10}}, 'body': {'type': 'BlockStatement', 'start': 26, 'end': 54, 'loc': {'start': {'line': 2, 'column': 15}, 'end': {'line': 5, 'column': 1}}, 'body': [{'type': 'ExpressionStatement', 'start': 32, 'end': 38, 'loc': {'start': {'line': 3, 'column': 4}, 'end': {'line': 3, 'column': 10}}, 'expression': {'type': 'UpdateExpression', 'start': 32, 'end': 36, 'loc': {'start': {'line': 3, 'column': 4}, 'end': {'line': 3, 'column': 8}}, 'operator': '++', 'prefix': False, 'argument': {'type': 'Identifier', 'start': 32, 'end': 33, 'loc': {'start': {'line': 3, 'column': 4}, 'end': {'line': 3, 'column': 5}, 'identifierName': 'x'}, 'name': 'x'}}}, {'type': 'ExpressionStatement', 'start': 43, 'end': 52, 'loc': {'start': {'line': 4, 'column': 4}, 'end': {'line': 4, 'column': 13}}, 'expression': {'type': 'CallExpression', 'start': 43, 'end': 51, 'loc': {'start': {'line': 4, 'column': 4}, 'end': {'line': 4, 'column': 12}}, 'callee': {'type': 'Identifier', 'start': 43, 'end': 48, 'loc': {'start': {'line': 4, 'column': 4}, 'end': {'line': 4, 'column': 9}, 'identifierName': 'print'}, 'name': 'print'}, 'arguments': [{'type': 'Identifier', 'start': 49, 'end': 50, 'loc': {'start': {'line': 4, 'column': 10}, 'end': {'line': 4, 'column': 11}, 'identifierName': 'x'}, 'name': 'x'}]}}], 'directives': []}}]}
+>>> a = \
+'''def fun(data):\n
+    print("function execution")
+    interpreter=Interpreter(data)
+    interpreter.evaluateData()
+'''
+>>> exec(a)
+>>> fun(interpreter.var["func"])
+function execution
+VariableDeclaration: x 0
+WhileStatement: 
+
+UpdateExpression: x ++
+CallExpression: print 1 -> (function_execution below)
+1
+UpdateExpression: x ++
+CallExpression: print 2 -> (function_execution below)
+2
+UpdateExpression: x ++
+CallExpression: print 3 -> (function_execution below)
+3
+UpdateExpression: x ++
+CallExpression: print 4 -> (function_execution below)
+4
+UpdateExpression: x ++
+CallExpression: print 5 -> (function_execution below)
+5
+UpdateExpression: x ++
+CallExpression: print 6 -> (function_execution below)
+6
+UpdateExpression: x ++
+CallExpression: print 7 -> (function_execution below)
+7
+UpdateExpression: x ++
+CallExpression: print 8 -> (function_execution below)
+8
+UpdateExpression: x ++
+CallExpression: print 9 -> (function_execution below)
+9
+UpdateExpression: x ++
+CallExpression: print 10 -> (function_execution below)
+10
+
+EndWhileStatement
