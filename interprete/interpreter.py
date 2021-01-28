@@ -16,6 +16,7 @@ class Interpreter:
                     "--":(lambda x: x-1), "+=":(lambda x,y: x+y),
                     "-=":(lambda x,y: x-y)}
         self.var = {"print" : "print"}
+        self.fun = {}
         self.builtins = ["print"]
 
     def evaluateData(self):
@@ -37,10 +38,10 @@ class Interpreter:
                         block.evaluateData()
                     print("\nEndWhileStatement\n")
                 elif x["type"]=="IfStatement" :
-                    ifBlock = Evaluator(x["consequent"]["body"])
+                    ifBlock = Interpreter(x["consequent"]["body"])
                     elseEvaluation = []
                     if not (x["alternate"] is None):
-                        elseBlock = Evaluator(x["alternate"]["body"])
+                        elseBlock = Interpreter(x["alternate"]["body"])
                         elseEvaluation = elseBlock.evaluateData()
                     toAdd="if "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(ifBlock.evaluateData()))+" \n}")
                     if elseEvaluation != []:
@@ -56,21 +57,27 @@ class Interpreter:
                         block.evaluateData()
                         self.evaluateExpression(x["update"])
                     print("\nEndForStatement\n")
+                elif x["type"] == "FunctionDeclaration":
+                    funBlock = (x["body"]["body"])
+                    params=[]
+                    if not(x["params"] is None):
+                        for y in x["params"]:
+                            params.append(self.evaluateExpression(y, True))
+#                    toAdd = "function "+x["id"]["name"]+"("+str_params+") {\n\t"+"\n\t".join(funBlock)+"\n}"
+                    self.fun[x["id"]["name"]]={}
+                    self.fun[x["id"]["name"]]["params"] = params
+                    self.fun[x["id"]["name"]]["fun"] = funBlock
+                    self.fun[x["id"]["name"]]["env"] = self.var
+                    print("FunctionDeclaration: "+x["id"]["name"])
                 elif x["type"] == "BreakStatement":
                     list_string.append("break;")
                 elif x["type"] == "ContinueStatement":
                     list_string.append("continue;")
-                elif x["type"] == "FunctionDeclaration":
-                    funcBlock = Evaluator(x["body"]["body"]).evaluateData()
-                    params=[]
-                    if not(x["params"] is None):
-                        for y in x["params"]:
-                            params.append(self.evaluateExpression(y))
-                    str_params = ", ".join(params)
-                    toAdd = "function "+x["id"]["name"]+"("+str_params+") {\n\t"+"\n\t".join(funcBlock)+"\n}"
-                    list_string.append(toAdd)
+                
                 elif x["type"]=="ReturnStatement":
-                    list_string.append("return "+self.evaluateExpression(x["argument"])+";")
+                    toReturn = self.evaluateExpression(x["argument"])
+                    print("ReturnStatement: "+str(toReturn))
+                    return toReturn
                 elif x["type"]=="SwitchStatement":
                     switchBlock = Evaluator(x["cases"]).evaluateData()
                     list_string.append("switch("+self.evaluateExpression(x["discriminant"])+") {\n\t"+"\n\t".join(switchBlock)+"\n}")
@@ -99,7 +106,7 @@ class Interpreter:
             self.var[(expr["argument"]["name"])] = self.ops[str(expr["operator"])] (int(self.evaluateExpression(expr["argument"])))
             print("UpdateExpression: "+expr["argument"]["name"]+" "+str(expr["operator"]))
         elif expr["type"]=="CallExpression":
-            func_name = self.evaluateExpression(expr["callee"])
+            func_name = self.evaluateExpression(expr["callee"], True)
             func_arguments= []
             for x in expr["arguments"]:
                 func_arguments.append(self.evaluateExpression(x))
@@ -107,6 +114,18 @@ class Interpreter:
                 my_func = getattr(builtins, func_name)
                 print("CallExpression: "+func_name+" "+" ".join(str(v) for v in func_arguments)+" -> (function_execution below)")
                 my_func(*func_arguments)
+            else:
+                interpreter = Interpreter(self.fun[func_name]["fun"])
+                (interpreter.var).update(self.fun[func_name]["env"])
+                for x in func_arguments:
+                    for y in self.fun[func_name]["params"]:
+                        interpreter.var[y] = x
+                interpreter.evaluateData()
+                keys = self.var.keys()
+                for x in keys:
+                    if x in interpreter.var:
+                        self.var[x] = interpreter.var[x]
+
         elif expr["type"]=="AssignmentExpression":
             operator = expr["operator"]
             if str(operator) == "=":
