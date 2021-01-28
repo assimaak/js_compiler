@@ -13,7 +13,8 @@ class Interpreter:
                     ">": (lambda x,y: x>y), "==":(lambda x,y: x==y),
                     "!=":(lambda x,y: x!=y),">=":(lambda x,y: x>=y),
                     "<=":(lambda x,y: x<=y),"++":(lambda x: x+1),
-                    "--":(lambda x: x-1)}
+                    "--":(lambda x: x-1), "+=":(lambda x,y: x+y),
+                    "-=":(lambda x,y: x-y)}
         self.var = {"print" : "print"}
         self.builtins = ["print"]
 
@@ -22,7 +23,7 @@ class Interpreter:
         if not(self.data is None):
             for x in self.data:
                 if x["type"]=="ExpressionStatement":
-                    self.evaluateExpression(x["expression"])
+                    print("ExpressionStatement: "+str(self.evaluateExpression(x["expression"])))
                     #possible to avoid that if statement 
                     #if toAdd[0] == "(":
                     #    toAdd = toAdd[1:-1]
@@ -46,12 +47,15 @@ class Interpreter:
                         toAdd = toAdd+"\nelse { \n\t"+"\n\t".join(elseEvaluation)+"\n}"              
                     list_string.append(toAdd)
                 elif x["type"] == "ForStatement":
-                    forBlock = Evaluator(x["body"]["body"]).evaluateData()
-                    init = ""
-                    if not (x["init"] is None):
-                        init = self.evaluateExpression(x["init"])
-                    toAdd = "for ("+init+"; "+self.evaluateExpression(x["test"])+"; "+self.evaluateExpression(x["update"])+") {\n\t"+"\n\t".join(forBlock)+"\n}"
-                    list_string.append(toAdd)
+                    block = Interpreter(x["body"]["body"])
+                    if x["init"] != None:
+                        self.evaluateExpression(x["init"])
+                    block.var = self.var
+                    print("ForStatement: \n")
+                    while self.evaluateExpression(x["test"]):
+                        block.evaluateData()
+                        self.evaluateExpression(x["update"])
+                    print("\nEndForStatement\n")
                 elif x["type"] == "BreakStatement":
                     list_string.append("break;")
                 elif x["type"] == "ContinueStatement":
@@ -78,7 +82,7 @@ class Interpreter:
         return list_string
         
     
-    def evaluateExpression(self, expr):
+    def evaluateExpression(self, expr, opt=False):
         result = ""
         if expr["type"] == "NumericLiteral":
             result = int(expr["value"])
@@ -87,7 +91,10 @@ class Interpreter:
         elif expr["type"] == "StringLiteral":
             result = expr["value"]
         elif expr["type"] == "Identifier":
-            result = self.var[(expr["name"])]
+            if opt:
+                result = expr["name"]
+            else:
+                result = self.var[(expr["name"])]
         elif expr["type"]=="UpdateExpression":
             self.var[(expr["argument"]["name"])] = self.ops[str(expr["operator"])] (int(self.evaluateExpression(expr["argument"])))
             print("UpdateExpression: "+expr["argument"]["name"]+" "+str(expr["operator"]))
@@ -100,6 +107,13 @@ class Interpreter:
                 my_func = getattr(builtins, func_name)
                 print("CallExpression: "+func_name+" "+" ".join(str(v) for v in func_arguments)+" -> (function_execution below)")
                 my_func(*func_arguments)
+        elif expr["type"]=="AssignmentExpression":
+            operator = expr["operator"]
+            if str(operator) == "=":
+                self.var[self.evaluateExpression(expr["left"], True)] = int(self.evaluateExpression(expr["right"]))
+            else:
+                self.var[self.evaluateExpression(expr["left"], True)] = self.ops[str(operator)] (int(self.evaluateExpression(expr["left"])),int(self.evaluateExpression(expr["right"])))
+            print(str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"])))
         return result
 
     def evaluateVariable(self, expr, indexVariable):
