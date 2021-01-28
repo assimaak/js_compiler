@@ -38,15 +38,20 @@ class Interpreter:
                         block.evaluateData()
                     print("\nEndWhileStatement\n")
                 elif x["type"]=="IfStatement" :
-                    ifBlock = Interpreter(x["consequent"]["body"])
+                    b = self.evaluateExpression(x["test"])
+                    if b == True:
+                        print("If "+str(b)+" :")
+                        ifBlock = Interpreter(x["consequent"]["body"])
+                        ifBlock.var = self.var
+                        ifEvaluation = ifBlock.evaluateData()
+                    if b == False:
+                        print("If "+str(b))
                     elseEvaluation = []
-                    if not (x["alternate"] is None):
+                    if not (x["alternate"] is None) and b==False:
+                        print("Else :")
                         elseBlock = Interpreter(x["alternate"]["body"])
+                        elseBlock.var = self.var
                         elseEvaluation = elseBlock.evaluateData()
-                    toAdd="if "+str(self.evaluateExpression(x["test"])+" {\n\t"+('\n\t'.join(ifBlock.evaluateData()))+" \n}")
-                    if elseEvaluation != []:
-                        toAdd = toAdd+"\nelse { \n\t"+"\n\t".join(elseEvaluation)+"\n}"              
-                    list_string.append(toAdd)
                 elif x["type"] == "ForStatement":
                     block = Interpreter(x["body"]["body"])
                     if x["init"] != None:
@@ -131,8 +136,10 @@ class Interpreter:
             if str(operator) == "=":
                 self.var[self.evaluateExpression(expr["left"], True)] = int(self.evaluateExpression(expr["right"]))
             else:
-                self.var[self.evaluateExpression(expr["left"], True)] = self.ops[str(operator)] (int(self.evaluateExpression(expr["left"])),int(self.evaluateExpression(expr["right"])))
-            print(str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"])))
+               self.var[self.evaluateExpression(expr["left"], True)] = self.ops[str(operator)] (int(self.evaluateExpression(expr["left"])),int(self.evaluateExpression(expr["right"])))
+               print(expr["left"]["name"]+" is now "+str(self.var[self.evaluateExpression(expr["left"], True)]))
+                
+            ##print(str(self.evaluateExpression(expr["left"]))+str(expr["operator"])+str(self.evaluateExpression(expr["right"])))
         return result
 
     def evaluateVariable(self, expr, indexVariable):
