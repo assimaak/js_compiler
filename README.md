@@ -41,3 +41,12 @@ python3 evaluator.py filename.json
 ```code
 python3 interpreter.py filename.json
 ```
+# Compilateur
+
+- Lancer les commande suivantes:
+``` code
+python3 compiler.py 01-expressions.json > lib/compiled.c
+cd lib
+make
+./compiled
+```
