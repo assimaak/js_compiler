@@ -8,24 +8,42 @@ class Compiler:
         self.data = parsedData
         self.globals = False
         self.ops = {"+":"iadd", "-":"isub", "*":"imul", "/":"idiv",
-                    "%":"imod", "<":"ilt", "<=":"ile", "==":"ieq"}
+                    "%":"imod", "<":"ilt", "<=":"ile", "==":"ieq",
+                    "!":"lneg", "&&":"land", "||":"lor"}
         self.globalVar = {}
         self.indexGlobal = 0
         self.globalValue = []
+        self.nbWhile = 1
         
 
     def compileData(self, depth = 0):
         """
         """
         toWrite = []
-        toWrite.append("#include \"base.h\"\n\nint main() {\n")
+        if depth==0:
+            toWrite.append("#include \"base.h\"\n\nint main() {\n")
         for x in self.data:
             if x["type"]=="ExpressionStatement":
-                toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
+                if (x["expression"]["type"] != "CallExpression"):
+                    toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
             elif x["type"]=="VariableDeclaration":
                     if (depth == 0):
                         toWrite.append("\t"+self.compileVariable(x["declarations"],0))
-        toWrite.append("\n\treturn 0; \n }")
+            elif x["type"]=="WhileStatement" :
+                    block = Compiler(x["body"]["body"])
+                    block.globals = self.globals
+                    block.globalVar = self.globalVar
+                    block.indexGlobal = self.indexGlobal
+                    block.globalValue = self.globalValue
+                    strWhile = str(self.nbWhile)
+                    toWrite.append("\n\tgoto endwhile"+strWhile+";")
+                    toWrite.append("\nwhile"+strWhile+":"+"\n".join(block.compileData(1))+"\n\tgoto endwhile"+strWhile+";")
+                    toWrite.append("\nendwhile"+strWhile+":")
+                    value = self.compileExpression(x["test"])
+                    toWrite.append(value+"\n\tpop(r1);\n\tif(asbool(r1)) goto while"+strWhile+";")
+                    self.nbWhile = self.nbWhile+1
+        if depth==0:
+            toWrite.append("\n\treturn 0; \n }")
         return toWrite
 
     def compileExpression(self, expr, declaration=False):
@@ -39,6 +57,14 @@ class Compiler:
                 result = "\tpush(iconst("+str(expr["value"])+"));"
         elif expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression":
             result = str(self.compileExpression(expr["left"]))+"\n"+str(self.compileExpression(expr["right"]))+"\n\tpop(r1);\n\tpop(r2);\n\t"+self.ops[str(expr["operator"])]+"(r1,r2,r1);\n\tpush(r1);"
+        elif expr["type"]=="Identifier":
+            value = int(self.globalVar[expr["name"]])
+            result = "\tpush(globals["+str(value)+"]);"
+        elif expr["type"] == "UpdateExpression":
+            index = int(self.globalVar[expr["argument"]["name"]])
+            result = "\n\tpush(globals["+str(index)+"]);\n\tpush(iconst(1));"
+            if str(expr["operator"]) == "++":
+                result = result+"\n\tpop(r1);\n\tpop(r2);\n\tiadd(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
         return result
 
     def compileVariable(self, expr, indexVariable):
