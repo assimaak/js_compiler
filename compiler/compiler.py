@@ -14,6 +14,7 @@ class Compiler:
         self.indexGlobal = 0
         self.globalValue = []
         self.nbWhile = 1
+        self.nbIf = 1
         
 
     def compileData(self, depth = 0):
@@ -42,6 +43,27 @@ class Compiler:
                     value = self.compileExpression(x["test"])
                     toWrite.append(value+"\n\tpop(r1);\n\tif(asbool(r1)) goto while"+strWhile+";")
                     self.nbWhile = self.nbWhile+1
+            elif x["type"]=="IfStatement" :
+                    block = Compiler(x["consequent"]["body"])
+                    block.globals = self.globals
+                    block.globalVar = self.globalVar
+                    block.indexGlobal = self.indexGlobal
+                    block.globalValue = self.globalValue
+                    strIf = str(self.nbIf)
+                    #toWrite.append("\n\tgoto iftest"+strIf+";")
+                    toWrite.append("\niftest"+strIf+":")
+                    value = self.compileExpression(x["test"])
+                    toWrite.append(value+"\n\tpop(r1);\n\tif(asbool(r1)) {\t\t")
+                    toWrite.append("\n".join(block.compileData(1))+"\t}\n")
+                    if x["alternate"]:
+                         toWrite.append("\telse {\t\t")
+                         alter = Compiler(x["alternate"]["body"])
+                         alter.globals = self.globals
+                         alter.globalVar = self.globalVar
+                         alter.indexGlobal = self.indexGlobal
+                         alter.globalValue = self.globalValue
+                         toWrite.append("\n".join(block.compileData(1))+"\t}\n")                    
+                    self.nbIf = self.nbIf+1
         if depth==0:
             toWrite.append("\n\treturn 0; \n }")
         return toWrite
@@ -55,8 +77,10 @@ class Compiler:
                 result = "iconst("+str(expr["value"])+")"
             else:
                 result = "\tpush(iconst("+str(expr["value"])+"));"
-        elif expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression":
+        elif (expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression") and expr["operator"]!="!=":
             result = str(self.compileExpression(expr["left"]))+"\n"+str(self.compileExpression(expr["right"]))+"\n\tpop(r1);\n\tpop(r2);\n\t"+self.ops[str(expr["operator"])]+"(r1,r2,r1);\n\tpush(r1);"
+        elif (expr["type"] == "BinaryExpression" or expr["type"] == "LogicalExpression") and expr["operator"]=="!=":
+            result = str(self.compileExpression(expr["left"]))+"\n"+str(self.compileExpression(expr["right"]))+"\n\tpop(r1);\n\tpop(r2);\n\tieq(r1,r2,r1);\n\tlneg(r1,r1);\n\tpush(r1);"
         elif expr["type"]=="Identifier":
             value = int(self.globalVar[expr["name"]])
             result = "\tpush(globals["+str(value)+"]);"
@@ -65,6 +89,16 @@ class Compiler:
             result = "\n\tpush(globals["+str(index)+"]);\n\tpush(iconst(1));"
             if str(expr["operator"]) == "++":
                 result = result+"\n\tpop(r1);\n\tpop(r2);\n\tiadd(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
+        elif expr["type"]=="AssignmentExpression":
+            index = int(self.globalVar[expr["left"]["name"]])
+            result = "\n\tpush(globals["+str(index)+"]);\n"+str(self.compileExpression(expr["right"]))+";"
+            if str(expr["operator"]) == "+=":
+                result += "\n\tpop(r1);\n\tpop(r2);\n\tiadd(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
+            if str(expr["operator"]) == "-=":
+                result += "\n\tpop(r1);\n\tpop(r2);\n\tisub(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
+            if str(expr["operator"]) == "*=":
+                result += "\n\tpop(r1);\n\tpop(r2);\n\timul(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
+
         return result
 
     def compileVariable(self, expr, indexVariable):
