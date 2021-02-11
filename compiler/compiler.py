@@ -28,8 +28,8 @@ class Compiler:
             if x["type"]=="ExpressionStatement":
                 if (x["expression"]["type"] != "CallExpression"):
                     toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
-                if (x["expression"]["type"] == "CallExpression") and x["expression"]["callee"]["name"]=="print":
-                    toWrite.append("\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
+                #if (x["expression"]["type"] == "CallExpression") and x["expression"]["callee"]["name"]=="print":
+                #    toWrite.append("\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
             elif x["type"]=="VariableDeclaration":
                     if (depth == 0):
                         toWrite.append("\t"+self.compileVariable(x["declarations"],0))
