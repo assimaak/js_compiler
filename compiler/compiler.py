@@ -15,6 +15,7 @@ class Compiler:
         self.globalValue = []
         self.nbWhile = 1
         self.nbIf = 1
+        self.nbFor = 1
         
 
     def compileData(self, depth = 0):
@@ -27,6 +28,8 @@ class Compiler:
             if x["type"]=="ExpressionStatement":
                 if (x["expression"]["type"] != "CallExpression"):
                     toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
+                if (x["expression"]["type"] == "CallExpression") and x["expression"]["callee"]["name"]=="print":
+                    toWrite.append("\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
             elif x["type"]=="VariableDeclaration":
                     if (depth == 0):
                         toWrite.append("\t"+self.compileVariable(x["declarations"],0))
@@ -64,6 +67,26 @@ class Compiler:
                          alter.globalValue = self.globalValue
                          toWrite.append("\n".join(block.compileData(1))+"\t}\n")                    
                     self.nbIf = self.nbIf+1
+            elif x["type"]=="ForStatement" :
+                    block = Compiler(x["body"]["body"])
+                    block.globals = self.globals
+                    block.globalVar = self.globalVar
+                    block.indexGlobal = self.indexGlobal
+                    block.globalValue = self.globalValue
+                    strFor = str(self.nbFor)
+                    update = self.compileExpression(x["update"])
+                    if self.nbFor == 1:
+                        toWrite.append("\tint index = 0;")
+                    toWrite.append("\n\tgoto endfor"+strFor+";")
+                    toWrite.append("\nfor"+strFor+":"+"\n".join(block.compileData(1))+"\n\t"+update+"\n\tgoto endfor"+strFor+";")
+                    toWrite.append("\nendfor"+strFor+":")
+                    value = self.compileExpression(x["test"])
+                    if x["init"] :
+                        init = self.compileExpression(x["init"])
+                        toWrite.append("\tif (index==0) {\t"+init+"\n\tindex++;\n\t}")
+                    toWrite.append(value+"\n\tpop(r1);\n\tif(asbool(r1)) goto for"+strFor+";")
+                    self.nbFor = self.nbFor+1
+                    
         if depth==0:
             toWrite.append("\n\treturn 0; \n }")
         return toWrite
@@ -121,7 +144,7 @@ class Compiler:
                 self.globalValue.append("null")
                 self.globalVar[expr[indexVariable]["id"]["name"]] = self.indexGlobal
                 self.indexGlobal = self.indexGlobal+1
-                return "globals["+str(self.indexGlobal-1)+"] = null;\n\t"
+                return "globals["+str(self.indexGlobal-1)+"];\n\t"
             else:
                 self.globalValue.append(str(self.compileExpression(expr[indexVariable]["init"], True)))
                 self.globalVar[expr[indexVariable]["id"]["name"]] = self.indexGlobal
