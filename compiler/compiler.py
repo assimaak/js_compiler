@@ -40,7 +40,7 @@ class Compiler:
                     block.indexGlobal = self.indexGlobal
                     block.globalValue = self.globalValue
                     strWhile = str(self.nbWhile)
-                    toWrite.append("\n\tgoto endwhile"+strWhile+";")
+                    toWrite.append("\tgoto endwhile"+strWhile+";")
                     toWrite.append("\nwhile"+strWhile+":"+"\n".join(block.compileData(1))+"\n\tgoto endwhile"+strWhile+";")
                     toWrite.append("\nendwhile"+strWhile+":")
                     value = self.compileExpression(x["test"])
@@ -54,18 +54,19 @@ class Compiler:
                     block.globalValue = self.globalValue
                     strIf = str(self.nbIf)
                     #toWrite.append("\n\tgoto iftest"+strIf+";")
-                    toWrite.append("\niftest"+strIf+":")
                     value = self.compileExpression(x["test"])
-                    toWrite.append(value+"\n\tpop(r1);\n\tif(asbool(r1)) {\t\t")
-                    toWrite.append("\n".join(block.compileData(1))+"\t}\n")
+                    toWrite.append(value+"\n\tpop(r1);\n\tlneg(r1,r1);\n\tpush(r1);\n\tpop(r1);\n\tif(asbool(r1)) goto else"+strIf+";\t\t")
+                    toWrite.append("\n".join(block.compileData(1))+"\t\n")
+                    toWrite.append("else"+strIf+":\t\t")
                     if x["alternate"]:
-                         toWrite.append("\telse {\t\t")
                          alter = Compiler(x["alternate"]["body"])
                          alter.globals = self.globals
                          alter.globalVar = self.globalVar
                          alter.indexGlobal = self.indexGlobal
                          alter.globalValue = self.globalValue
-                         toWrite.append("\n".join(block.compileData(1))+"\t}\n")                    
+                         toWrite.append("\n".join(block.compileData(1)))
+                    toWrite.append("\tgoto endif"+strIf+";")
+                    toWrite.append("endif"+strIf+":")
                     self.nbIf = self.nbIf+1
             elif x["type"]=="ForStatement" :
                     block = Compiler(x["body"]["body"])
