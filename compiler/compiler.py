@@ -27,9 +27,9 @@ class Compiler:
         for x in self.data:
             if x["type"]=="ExpressionStatement":
                 if (x["expression"]["type"] != "CallExpression"):
-                    toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
-                #if (x["expression"]["type"] == "CallExpression") and x["expression"]["callee"]["name"]=="print":
-                #    toWrite.append("\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
+                    toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n")
+                if (x["expression"]["type"] == "CallExpression") and x["expression"]["callee"]["name"]=="print":
+                    toWrite.append("\n\n\tdebug_reg(globals["+str(self.globalVar[str(x["expression"]["arguments"][0]["name"])])+"]);\n")
             elif x["type"]=="VariableDeclaration":
                     if (depth == 0):
                         toWrite.append("\t"+self.compileVariable(x["declarations"],0))
@@ -79,7 +79,7 @@ class Compiler:
                     if self.nbFor == 1:
                         toWrite.append("\tint index = 0;")
                     toWrite.append("\n\tgoto endfor"+strFor+";")
-                    toWrite.append("\nfor"+strFor+":"+"\n".join(block.compileData(1))+"\n\t"+update+"\n\tgoto endfor"+strFor+";")
+                    toWrite.append("\nfor"+strFor+":"+"\n".join(block.compileData(1))+"\n\t"+update+"\n\tpop(r1);\n\tgoto endfor"+strFor+";")
                     toWrite.append("\nendfor"+strFor+":")
                     value = self.compileExpression(x["test"])
                     if x["init"] :
