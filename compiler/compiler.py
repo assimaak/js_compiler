@@ -31,8 +31,10 @@ class Compiler:
             toWrite.append("#include \"base.h\"\n#include <stdio.h>\nint main() {\n")
         for x in self.data:
             if x["type"]=="ExpressionStatement":
-                if (x["expression"]["type"] != "CallExpression"):
-                    toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);\n\tdebug_reg(r1);\n")
+                drop = ""
+                if (x["expression"]["type"] == "CallExpression"):
+                    drop = "\n\tdrop("+str(self.cptLoc)+");"
+                toWrite.append(self.compileExpression(x["expression"])+"\n\n\tpop(r1);"+drop+"\n\tdebug_reg(r1);\n")
                # if (x["expression"]["type"] == "CallExpression") and x["expression"]["callee"]["name"]=="print":
                 #    toWrite.append("\n\n\tdebug_reg(globals["+str(self.globalVar[str(x["expression"]["arguments"][0]["name"])])+"]);\n")
             elif x["type"]=="VariableDeclaration":
@@ -96,6 +98,7 @@ class Compiler:
                     toWrite.append(value+"\n\tpop(r1);\n\tif(asbool(r1)) goto for"+strFor+";")
                     self.nbFor = self.nbFor+1
             elif x["type"]=="FunctionDeclaration":
+                self.cptLoc = 0
                 functname = x["id"]["name"]
                 toWrite.append("\tgoto functend_"+functname+";")
                 toWrite.append("\nfunct_"+functname+":")
@@ -113,6 +116,7 @@ class Compiler:
                 block.nbFor = self.nbFor   
                 toWrite.append("\n".join(block.compileData(1)))
                 toWrite.append("functend_"+functname+":")
+                self.cptLoc = block.cptLoc
             elif x["type"]=="ReturnStatement":
                 toWrite.append("\tpop(r1);")
                 toWrite.append("\tdrop("+str(self.cptLoc)+");")
@@ -157,12 +161,20 @@ class Compiler:
                 result = "\n\tpush(globals["+str(index)+"]);\n"+str(self.compileExpression(expr["right"]))+";"
             if str(expr["operator"]) == "+=":
                 result += "\n\tpop(r1);\n\tpop(r2);\n\tiadd(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
-            if str(expr["operator"]) == "-=":
+            elif str(expr["operator"]) == "-=":
                 result += "\n\tpop(r1);\n\tpop(r2);\n\tisub(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
-            if str(expr["operator"]) == "*=":
+            elif str(expr["operator"]) == "*=":
                 result += "\n\tpop(r1);\n\tpop(r2);\n\timul(r1,r2,r1);\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
             else:
                 result+="\n\tglobals["+str(index)+"]=r1;\n\tpush(r1);"
+        elif expr["type"] == "CallExpression":
+            args = ""
+            for x in expr["arguments"]:
+                    args = self.compileExpression(x)+args
+            if expr["callee"]["name"] == "print":
+                result = args
+            else:
+                result = args+"\n\tcall(funct_"+expr["callee"]["name"]+");"
         return result
 
     def compileVariable(self, expr, indexVariable):
